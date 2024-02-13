@@ -1,5 +1,5 @@
-[ ] Kafka consumption
+[x] Kafka consumption
 [ ] Sqllite connection
 [ ] CLI API
-[ ] Testing setup
+[x] Testing setup
 [ ] CI

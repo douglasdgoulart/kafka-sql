@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/douglasdgoulart/kafka-sql/internal/db"
 	"github.com/douglasdgoulart/kafka-sql/internal/kafka"
+	"github.com/douglasdgoulart/kafka-sql/internal/model"
 	"github.com/douglasdgoulart/kafka-sql/internal/util"
 )
 
@@ -17,6 +19,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	repository := db.NewDBRepository(nil)
 	k := kafka.NewKafkaConsumer(config.KafkaConfiguration, msgChan)
 
 	wg.Add(1)
@@ -25,9 +28,21 @@ func main() {
 		k.Run(ctx)
 	}()
 
-	for msg := range msgChan {
-		fmt.Printf("Received message: %s\n", *msg)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for msg := range msgChan {
+			message := &model.Message{
+				Topic: "test_topic",
+				Data:  *msg,
+			}
 
-	fmt.Println("Hello, World!")
+			err := repository.SaveMessage(message)
+			if err != nil {
+				fmt.Printf("Error saving message: %s\n", err)
+			}
+		}
+	}()
+
+	wg.Wait()
 }

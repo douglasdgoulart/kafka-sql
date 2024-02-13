@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/douglasdgoulart/kafka-sql/internal/util"
@@ -15,8 +16,9 @@ type KafkaConsumer struct {
 }
 
 func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *[]byte) *KafkaConsumer {
+	brokers := strings.Split(config.Brokers, ",")
 	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(config.Brokers),
+		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(config.GroupID),
 		kgo.ConsumeTopics(config.Topic),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
