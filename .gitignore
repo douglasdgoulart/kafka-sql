@@ -26,5 +26,6 @@ go.work
 
 ## Sqlite files
 *.db
+*.db-journal
 
 # End of https://www.toptal.com/developers/gitignore/api/go
