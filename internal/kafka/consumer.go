@@ -6,16 +6,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/douglasdgoulart/kafka-sql/internal/model"
 	"github.com/douglasdgoulart/kafka-sql/internal/util"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"gorm.io/datatypes"
 )
 
 type KafkaConsumer struct {
 	client  *kgo.Client
-	msgChan chan<- *[]byte
+	msgChan chan<- *model.Message
 }
 
-func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *[]byte) *KafkaConsumer {
+func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *model.Message) *KafkaConsumer {
 	brokers := strings.Split(config.Brokers, ",")
 	topics := strings.Split(config.Topic, ",")
 	cl, err := kgo.NewClient(
@@ -24,6 +26,7 @@ func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *[]byte) *
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.SessionTimeout(time.Duration(config.SessionTimeout*int(time.Millisecond))),
+		kgo.RequestTimeoutOverhead(time.Duration(3*int(time.Minute))),
 		// TODO: add the missing configurations
 	)
 	if err != nil {
@@ -55,9 +58,17 @@ func (k *KafkaConsumer) Run(ctx context.Context) {
 		iter := fetches.RecordIter()
 		for !iter.Done() {
 			record := iter.Next()
-			go func() {
-				k.msgChan <- &record.Value
-			}()
+			go func(record *kgo.Record) {
+				// TODO: add a desserializer to allow protobuf messages
+				message := &model.Message{
+					InjetionTime: record.Timestamp,
+					Topic:        record.Topic,
+					Partition:    record.Partition,
+					Offset:       record.Offset,
+					Data:         datatypes.JSON(record.Value),
+				}
+				k.msgChan <- message
+			}(record)
 		}
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	msgChan := make(chan *[]byte)
+	msgChan := make(chan *model.Message)
 	config := util.NewConfiguration()
 	fmt.Printf("KafkaConfiguration: %+v\n", config.KafkaConfiguration)
 	ctx := context.Background()
@@ -32,12 +32,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		for msg := range msgChan {
-			message := &model.Message{
-				Topic: "test_topic",
-				Data:  *msg,
-			}
-
-			err := repository.SaveMessage(message)
+			err := repository.SaveMessage(msg)
 			if err != nil {
 				fmt.Printf("Error saving message: %s\n", err)
 			}

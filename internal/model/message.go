@@ -11,7 +11,7 @@ type Message struct {
 	gorm.Model
 	InjetionTime time.Time
 	Topic        string
-	Partition    int
-	Offset       int
+	Partition    int32
+	Offset       int64
 	Data         datatypes.JSON `gorm:"type:jsonb"`
 }
