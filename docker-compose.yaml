@@ -4,6 +4,11 @@ services:
     image: confluentinc/cp-zookeeper:latest
     networks:
       - broker-kafka
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc -w 2 zookeeper 4444"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000

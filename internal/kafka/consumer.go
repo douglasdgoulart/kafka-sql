@@ -17,10 +17,11 @@ type KafkaConsumer struct {
 
 func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *[]byte) *KafkaConsumer {
 	brokers := strings.Split(config.Brokers, ",")
+	topics := strings.Split(config.Topic, ",")
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(config.GroupID),
-		kgo.ConsumeTopics(config.Topic),
+		kgo.ConsumeTopics(topics...),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.SessionTimeout(time.Duration(config.SessionTimeout*int(time.Millisecond))),
 		// TODO: add the missing configurations
@@ -28,6 +29,13 @@ func NewKafkaConsumer(config *util.KafkaConfiguration, msgChan chan<- *[]byte) *
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("Trying to ping kafka")
+	err = cl.Ping(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Kafka consumer created")
 
 	return &KafkaConsumer{
 		client:  cl,
@@ -39,6 +47,7 @@ func (k *KafkaConsumer) Run(ctx context.Context) {
 	defer k.client.Close()
 	for {
 		fetches := k.client.PollFetches(ctx)
+
 		if errs := fetches.Errors(); len(errs) > 0 {
 			panic(fmt.Sprint(errs))
 		}
