@@ -1,6 +1,6 @@
 module github.com/douglasdgoulart/kafka-sql
 
-go 1.21.6
+go 1.22.0
 
 require github.com/twmb/franz-go/pkg/kadm v1.11.0
 
