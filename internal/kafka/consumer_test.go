@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/douglasdgoulart/kafka-sql/internal/model"
 	"github.com/douglasdgoulart/kafka-sql/internal/util"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -29,7 +30,7 @@ func TestKafkaConsumer_Run(t *testing.T) {
 	_ = cl.ProduceSync(context.Background(), &kgo.Record{Topic: topic, Value: []byte("test message")})
 
 	// Create a KafkaConsumer with the real client and a message channel.
-	msgChan := make(chan *[]byte)
+	msgChan := make(chan *model.Message)
 	k := NewKafkaConsumer(&util.KafkaConfiguration{
 		Brokers:         "localhost:9092",
 		GroupID:         string(rand.Int31()),
@@ -44,7 +45,7 @@ func TestKafkaConsumer_Run(t *testing.T) {
 	// Wait for a message to be sent to the channel.
 	select {
 	case msg := <-msgChan:
-		t.Logf("Received message: %s", *msg)
+		t.Logf("Received message: %v", *msg)
 	case <-time.After(10 * time.Second):
 		t.Fatal("No message received within timeout")
 	}
