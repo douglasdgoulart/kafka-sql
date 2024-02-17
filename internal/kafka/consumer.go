@@ -52,6 +52,11 @@ func (k *KafkaConsumer) Run(ctx context.Context) {
 		fetches := k.client.PollFetches(ctx)
 
 		if errs := fetches.Errors(); len(errs) > 0 {
+			for _, err := range errs {
+				if err.Err == context.Canceled {
+					return
+				}
+			}
 			panic(fmt.Sprint(errs))
 		}
 

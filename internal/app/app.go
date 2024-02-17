@@ -20,11 +20,13 @@ type App struct {
 	k          *kafka.KafkaConsumer
 }
 
-func NewApp(config *util.Configuration) *App {
+func NewApp(config *util.Configuration, ctx context.Context) *App {
 	msgChan := make(chan *model.Message)
 
 	fmt.Printf("KafkaConfiguration: %+v\n", config.KafkaConfiguration)
-	ctx := context.Background()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	var wg sync.WaitGroup
 
@@ -42,22 +44,40 @@ func NewApp(config *util.Configuration) *App {
 }
 
 func (a *App) Run() {
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		a.k.Run(a.ctx)
-	}()
+	a.wg.Add(2)
 
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		for msg := range a.msgChan {
+	go a.runKafkaConsumer()
+	go a.runDatabase()
+
+	a.wg.Wait()
+}
+
+func (a *App) runKafkaConsumer() {
+	defer func() {
+		fmt.Println("Kafka consumer routine finished")
+		a.wg.Done()
+	}()
+	a.k.Run(a.ctx)
+}
+
+func (a *App) runDatabase() {
+	defer func() {
+		fmt.Println("Database routine finished")
+		a.wg.Done()
+	}()
+	for {
+		select {
+		case <-a.ctx.Done():
+			return
+		case msg := <-a.msgChan:
 			err := a.repository.SaveMessage(msg)
 			if err != nil {
 				fmt.Printf("Error saving message: %s\n", err)
 			}
 		}
-	}()
+	}
+}
 
-	a.wg.Wait()
+func (a *App) Stop() {
+	a.ctx.Done()
 }

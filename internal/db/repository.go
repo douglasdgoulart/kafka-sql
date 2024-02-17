@@ -5,6 +5,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 type DBRepository struct {
@@ -15,7 +16,9 @@ func NewDBRepository(dialector gorm.Dialector) *DBRepository {
 	if dialector == nil {
 		dialector = sqlite.Open("database.db")
 	}
-	db, err := gorm.Open(dialector, &gorm.Config{})
+	db, err := gorm.Open(dialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	  })
 	if err != nil {
 		panic("failed to connect database")
 	}
